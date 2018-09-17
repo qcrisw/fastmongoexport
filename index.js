@@ -33,7 +33,11 @@ const insert_many = function(db, collection_name, callback) {
 }
 
 const export_collection = function (db, collection_name) {
+  const pauseEvery = process.env.PAUSE_EVERY
+  const pauseFor = process.env.PAUSE_FOR
+  var processed = 0
   const cursor = db.collection(collection_name).find()
+  const jsonStream = JSONStream.stringify('', '\n', '\n')
   cursor.count(function (err, count) {
     if (err) {
       console.log(err)
@@ -47,6 +51,14 @@ const export_collection = function (db, collection_name) {
     const file = fs.createWriteStream(process.env.OUTPUT)
     stream.on('data', function () {
       bar.tick()
+      if (pauseEvery && pauseFor && ++processed % pauseEvery === 0) {
+        console.log("\nExported %d more documents, pausing for %d seconds...",
+          pauseEvery, pauseFor)
+        stream.unpipe(jsonStream)
+        setTimeout(function(){
+          stream.pipe(jsonStream)
+        }, pauseFor * 1000)
+      }
     })
     stream.on('error', function (err) {
       console.error(err)
@@ -56,7 +68,7 @@ const export_collection = function (db, collection_name) {
       process.exit(0)
     })
     stream
-      .pipe(JSONStream.stringify('', '\n', '\n'))
+      .pipe(jsonStream)
       .pipe(file)
   })
 }

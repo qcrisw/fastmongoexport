@@ -2,8 +2,6 @@ version: '3.3'
 services:
   db:
     image: mongo:latest
-    ports:
-      - "27017:27017"
   export:
     build: .
     volumes:
@@ -13,6 +11,8 @@ services:
       - COLLECTION=testcol
       - OUTPUT=/data/dump.json
       - INSERT_TEST_DATA=1
+      - PAUSE_EVERY=3
+      - PAUSE_FOR=1
     depends_on:
       - db
 
